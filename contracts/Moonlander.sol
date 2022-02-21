@@ -23,8 +23,8 @@ error OnlyExternallyOwnedAccountsAllowed();
 contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
 
   uint256 public constant MAX_SUPPLY = 10000;
-  uint256 private constant PRICE = 0.5 ether;
-  uint256 private constant WHITELIST_PRICE= 0.4 ether;
+  uint256 private constant PRICE = 0.05 ether;
+  uint256 private constant WHITELIST_PRICE= 0.04 ether;
   uint256 private constant FAR_FUTURE = 0xFFFFFFFFF;
   uint256 private constant MAX_MINTS_PER_TX = 5;
 
@@ -45,7 +45,8 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
     return block.timestamp > _whitelistSaleStart;
   }
 
-  function getWhitelistPrice() public view returns (uint256) {
+  // TODO: I don't get why this can be pure
+  function getWhitelistPrice() public pure returns (uint256) {
     return WHITELIST_PRICE;
   }
 
@@ -66,7 +67,7 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
   }
 
   // TODO: See if array lookup or mapping look up is more gas efficient
-  function isWhitelisted(address account) internal view returns (bool) {
+  function isWhitelisted(address account) public view returns (bool) {
     return _whitelist[account] == 0; 
   }
 
@@ -77,7 +78,8 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
   }
 
   
-  function getPublicSalePrice() public view returns (uint256) {
+  // TODO: I don't get why this can be pure
+  function getPublicSalePrice() public pure returns (uint256) {
     return PRICE;
   }
 
@@ -107,6 +109,7 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
     uint256 maxSupply; uint256 totalSupply;
   }
 
+  // TODO: this will need to be emitted as an event
   function getMintSummary() external view returns (MintSummary memory summary) {
      return MintSummary({
       isWhitelistSaleActive: isWhitelistSaleActive(),
@@ -119,7 +122,7 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
     });
   }
 
-//TODO: ER721Enumerable was removed 
+//  TODO: ER721Enumerable was removed 
 //   function tokensOf(address owner) public view returns (uint256[] memory){
 //     uint256 count = balanceOf(owner);
 //     uint256[] memory tokenIds = new uint256[](count);
@@ -133,7 +136,7 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
 
   function setWhitelist(address[] calldata addresses) external onlyOwner {
     for (uint256 i = 0; i < addresses.length; i++) {
-        _whitelist[addresses[i]] = 0;
+        _whitelist[addresses[i]] = -1;
     }
   }
 
