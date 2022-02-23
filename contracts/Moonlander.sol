@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: OPEN
 pragma solidity ^0.8.4;
 
+
+// dev dependency
+import "hardhat/console.sol";
+
+
 import "./ERC721A.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 // TODO: adding lots of addresses to list will hav high gas costs.
 // https://www.youtube.com/watch?v=j0S6Izd_H4k
@@ -27,11 +33,13 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
   uint256 private constant WHITELIST_PRICE= 0.04 ether;
   uint256 private constant FAR_FUTURE = 0xFFFFFFFFF;
   uint256 private constant MAX_MINTS_PER_TX = 5;
+  uint256 private constant ON_WHITELIST = 10;
+  uint256 private constant MAX_WHITELIST_MINTS = 1;
 
   uint256 private _publicSaleStart = FAR_FUTURE;
   uint256 private _whitelistSaleStart = FAR_FUTURE;
   string private _baseTokenURI;
-  mapping(address => int) private _whitelist;
+  mapping(address => uint256) private _whitelist;
   event PublicSaleStart(uint256 price, uint256 supplyRemaining);
   event WhiteListStart(uint256 price, uint256 supplyRemaining);
   event SetWhitelist();
@@ -63,12 +71,12 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
   }
 
   function hasMintedPresale(address account) public view returns (bool) {
-    return _whitelist[account] == 1;
+    return _whitelist[account] == ON_WHITELIST + MAX_WHITELIST_MINTS;
   }
 
   // TODO: See if array lookup or mapping look up is more gas efficient
   function isWhitelisted(address account) public view returns (bool) {
-    return _whitelist[account] == 0; 
+    return _whitelist[account] == ON_WHITELIST; 
   }
 
   // PUBLIC SALE
@@ -122,6 +130,8 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
     });
   }
 
+ 
+
 //  TODO: ER721Enumerable was removed 
 //   function tokensOf(address owner) public view returns (uint256[] memory){
 //     uint256 count = balanceOf(owner);
@@ -136,7 +146,7 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
 
   function setWhitelist(address[] calldata addresses) external onlyOwner {
     for (uint256 i = 0; i < addresses.length; i++) {
-        _whitelist[addresses[i]] = -1;
+        _whitelist[addresses[i]] = ON_WHITELIST;
     }
   }
 
@@ -145,7 +155,7 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
 
     _whitelistSaleStart = block.timestamp;
 
-    emit PublicSaleStart(getPublicSalePrice(), MAX_SUPPLY - totalSupply());
+    emit PublicSaleStart(getWhitelistPrice(), MAX_SUPPLY - totalSupply());
   }
 
   function startPublicSale() external onlyOwner {
@@ -171,4 +181,16 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
   function withdraw() external onlyOwner {
     payable(owner()).transfer(address(this).balance);
   }
+
+  function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        string memory uri = super.tokenURI(tokenId);
+        return bytes(uri).length > 0 ? string(abi.encodePacked(uri, ".json")) : "";
+  }
+
+   // function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+  //       if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
+
+  //       string memory baseURI = _baseURI();
+  //       return bytes(baseURI).length != 0 ? string(abi.encodePacked(baseURI, Strings.toString(tokenId))) : '';
+  // }
 }
