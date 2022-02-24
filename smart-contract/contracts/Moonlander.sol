@@ -28,7 +28,6 @@ error OnlyExternallyOwnedAccountsAllowed();
 
 contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
 
-  uint256 public constant MAX_SUPPLY = 10000;
   uint256 private constant PRICE = 0.05 ether;
   uint256 private constant WHITELIST_PRICE= 0.04 ether;
   uint256 private constant FAR_FUTURE = 0xFFFFFFFFF;
@@ -36,12 +35,13 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
   uint256 private constant ON_WHITELIST = 10;
   uint256 private constant MAX_WHITELIST_MINTS = 1;
 
+  uint256 public _maxSupply = 10000;
   uint256 private _publicSaleStart = FAR_FUTURE;
   uint256 private _whitelistSaleStart = FAR_FUTURE;
   string private _baseTokenURI;
   mapping(address => uint256) private _whitelist;
   event PublicSaleStart(uint256 price, uint256 supplyRemaining);
-  event WhiteListStart(uint256 price, uint256 supplyRemaining);
+  event WhitelistStart(uint256 price, uint256 supplyRemaining);
   event SetWhitelist();
   event SalePaused();
 
@@ -58,12 +58,13 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
     return WHITELIST_PRICE;
   }
 
-  // whitelisters can only mint 1 token
-  function whiteListMint() external payable nonReentrant onlyEOA {
+  // whitelisters can only mint 1 token 
+  function whitelistMint() external payable nonReentrant onlyEOA {
     if (!isWhitelistSaleActive())        revert SaleNotStarted();
     if (!isWhitelisted(msg.sender))      revert AccountNotWhitelisted();
     if (hasMintedPresale(msg.sender))    revert AmountExceedsWhitelistLimit();
-    if (totalSupply() + 1 > MAX_SUPPLY)  revert AmountExceedsSupply();
+    if (totalSupply() + 1 > _maxSupply
+)  revert AmountExceedsSupply();
     if (getWhitelistPrice() != msg.value)revert IncorrectPayment();
 
     _whitelist[msg.sender] += 1;
@@ -93,7 +94,8 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
 
   function publicSaleMint(uint256 quantity) external payable nonReentrant onlyEOA {
     if (!isPublicSaleActive())                  revert SaleNotStarted();
-    if (totalSupply() + quantity > MAX_SUPPLY)  revert AmountExceedsSupply();
+    if (totalSupply() + quantity > _maxSupply
+)  revert AmountExceedsSupply();
     if (getPublicSalePrice() * quantity != msg.value) revert IncorrectPayment();
     if (quantity > MAX_MINTS_PER_TX)            revert AmountExceedsTransactionLimit();
 
@@ -124,7 +126,8 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
       isPublicSaleActive: isPublicSaleActive(),
       getPublicSalePrice: getPublicSalePrice(),
       getWhitelistPrice: getWhitelistPrice(),
-      maxSupply: MAX_SUPPLY,
+      maxSupply: _maxSupply
+  ,
       totalSupply: totalSupply(),
       blockTime: block.timestamp
     });
@@ -150,12 +153,13 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
     }
   }
 
-  function startWhiteListSale() external onlyOwner {
+  function startWhitelistSale() external onlyOwner {
     if (isWhitelistSaleActive()) revert SaleInProgress();
 
     _whitelistSaleStart = block.timestamp;
 
-    emit PublicSaleStart(getWhitelistPrice(), MAX_SUPPLY - totalSupply());
+    emit PublicSaleStart(getWhitelistPrice(), _maxSupply
+ - totalSupply());
   }
 
   function startPublicSale() external onlyOwner {
@@ -163,7 +167,8 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
 
     _publicSaleStart = block.timestamp;
 
-    emit PublicSaleStart(getPublicSalePrice(), MAX_SUPPLY - totalSupply());
+    emit PublicSaleStart(getPublicSalePrice(), _maxSupply
+ - totalSupply());
   }
 
   function pauseSale() external onlyOwner {
@@ -177,6 +182,11 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
     if (tx.origin != msg.sender) revert OnlyExternallyOwnedAccountsAllowed();
     _;
   }
+
+  function setMaxSupply(uint256 supply) external onlyOwner {
+    _maxSupply = supply;
+  }  
+
 
   function withdraw() external onlyOwner {
     payable(owner()).transfer(address(this).balance);
@@ -193,4 +203,28 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
   //       string memory baseURI = _baseURI();
   //       return bytes(baseURI).length != 0 ? string(abi.encodePacked(baseURI, Strings.toString(tokenId))) : '';
   // }
+
+
+  // prob should remove hthis cause it takes O(number of minted items)
+  function tokensOfOwner(address owner) external view returns (uint256[] memory) {
+    unchecked {
+        uint256[] memory a = new uint256[](balanceOf(owner)); 
+        uint256 end = totalSupply();
+        uint256 tokenIdsIdx;
+        address currOwnershipAddr;
+        for (uint256 i; i < end; i++) {
+            TokenOwnership memory ownership = _ownerships[i];
+            if (ownership.burned) {
+                continue;
+            }
+            if (ownership.addr != address(0)) {
+                currOwnershipAddr = ownership.addr;
+            }
+            if (currOwnershipAddr == owner) {
+                a[tokenIdsIdx++] = i;
+            }
+        }
+      return a;
+    }
+  }
 }
