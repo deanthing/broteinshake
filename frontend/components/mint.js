@@ -1,4 +1,5 @@
 import React from "react";
+import MintTranaction from "./mint-transaction";
 export default class Mint extends React.Component {
   render() {
     return (
@@ -7,34 +8,27 @@ export default class Mint extends React.Component {
           <span>{this.props.currMinted}/10000</span>
           <span className="text-5xl text-white">minted</span>
         </h2>
+
+        {/* connect wallet  */}
         <div className="space-y-4 p-4 text-center md:space-y-8">
-          {this.props.publicSaleActive == 1 ||
-          this.props.whitelistSaleActive == 1 ? (
+          {this.props.userSigner == null && (
             <div className="elative w-full overflow-hidden rounded-3xl bg-sea-400 bg-opacity-30 p-6 py-12">
-              {this.props.userSigner == null ? (
-                <button
-                  onClick={() => this.props.walletConnect()}
-                  className="btn bg-slate-100 text-orange-500 px-3 py-1 text-xl border-2 rounded-xl border-white hover:border-slate-300"
-                >
-                  Connect Your Wallet
-                </button>
-              ) : (
-                <div className="grid md:items-center lg:grid-cols-2">
-                  <div className="flex flex-col items-center justify-center text-center font-black">
-                    <button className="bg-white rounded-lg mx-5 px-5 py-2 border-4 border-white hover:border-slate-300">
-                      WHITELIST
-                    </button>
-                  </div>
-                  <div className="flex flex-col items-center justify-center text-center font-black">
-                    <button className="bg-white rounded-lg px-5 py-2 border-4 border-white hover:border-slate-300">
-                      PUBLIC SALE
-                    </button>
-                  </div>
-                </div>
-              )}
+              <button
+                onClick={() => this.props.walletConnect()}
+                className="btn bg-slate-100 text-orange-500 px-3 py-1 text-xl border-2 rounded-xl border-white hover:border-slate-300"
+              >
+                Connect Your Wallet
+              </button>
             </div>
-          ) : (
-            <p> sale not active</p>
+          )}
+          {this.props.walletConnectionError == true && (
+            <p className="text-rose-600">Couldn't connect to your wallet.</p>
+          )}
+          {this.props.userSigner != null && (
+            <MintTranaction
+              {...this.props}
+              updateCurrMinted={(count) => this.props.updateCurrMinted(count)}
+            />
           )}
         </div>
       </div>

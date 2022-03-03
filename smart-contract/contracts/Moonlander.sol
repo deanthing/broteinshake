@@ -135,18 +135,7 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
 
  
 
-//  TODO: ER721Enumerable was removed 
-//   function tokensOf(address owner) public view returns (uint256[] memory){
-//     uint256 count = balanceOf(owner);
-//     uint256[] memory tokenIds = new uint256[](count);
-//     for (uint256 i; i < count; i++) {
-//       tokenIds[i] = tokenOfOwnerByIndex(owner, i);
-//     }
-//     return tokenIds;
-//   }
-
   // OWNERS + HELPERS
-
   function setWhitelist(address[] calldata addresses) external onlyOwner {
     for (uint256 i = 0; i < addresses.length; i++) {
         _whitelist[addresses[i]] = ON_WHITELIST;
@@ -192,39 +181,14 @@ contract Moonlander is ERC721A, ReentrancyGuard, Ownable {
     payable(owner()).transfer(address(this).balance);
   }
 
-  function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        string memory uri = super.tokenURI(tokenId);
-        return bytes(uri).length > 0 ? string(abi.encodePacked(uri, ".json")) : "";
+  function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+      if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
+
+      string memory baseURI = _baseURI();
+      return bytes(baseURI).length != 0 ? string(abi.encodePacked(baseURI, Strings.toString(tokenId))) : '';
   }
 
-   // function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-  //       if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
-
-  //       string memory baseURI = _baseURI();
-  //       return bytes(baseURI).length != 0 ? string(abi.encodePacked(baseURI, Strings.toString(tokenId))) : '';
-  // }
-
-
-  // prob should remove hthis cause it takes O(number of minted items)
-  function tokensOfOwner(address owner) external view returns (uint256[] memory) {
-    unchecked {
-        uint256[] memory a = new uint256[](balanceOf(owner)); 
-        uint256 end = totalSupply();
-        uint256 tokenIdsIdx;
-        address currOwnershipAddr;
-        for (uint256 i; i < end; i++) {
-            TokenOwnership memory ownership = _ownerships[i];
-            if (ownership.burned) {
-                continue;
-            }
-            if (ownership.addr != address(0)) {
-                currOwnershipAddr = ownership.addr;
-            }
-            if (currOwnershipAddr == owner) {
-                a[tokenIdsIdx++] = i;
-            }
-        }
-      return a;
-    }
+  function ownerOf(uint256 tokenId) public view virtual override returns (address) {
+    return super.ownerOf(tokenId);
   }
 }

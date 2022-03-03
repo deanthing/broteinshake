@@ -8,7 +8,7 @@ import { ethers } from "ethers";
 
 export default class Home extends React.Component {
   state = {
-    contractAddress: "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+    contractAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
     userSigner: null,
     abi: null,
     userProvider: null,
@@ -18,7 +18,18 @@ export default class Home extends React.Component {
     currMinted: null,
     whitelistSaleActive: false,
     publicSaleActive: false,
+    publicSalePrice: 0,
+    whitelistSalePrice: 0,
+    walletConnectionError: false,
   };
+
+  updateCurrMinted(increase) {
+    console.log("updating curr minted: " + increase);
+    if (increase != null)
+      this.setState({
+        currMinted: parseInt(this.state.currMinted) + parseInt(increase),
+      });
+  }
 
   async componentDidMount() {
     // pull abi
@@ -30,7 +41,6 @@ export default class Home extends React.Component {
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
         this.setState({ abi: data["abi"] });
       });
 
@@ -44,27 +54,30 @@ export default class Home extends React.Component {
     const supply = await contract.totalSupply();
     const publicActive = await contract.isWhitelistSaleActive();
     const whitelistActive = await contract.isPublicSaleActive();
-    console.log(supply.toString());
+    const whitelistPrice = await contract.getWhitelistPrice();
+    const publicPrice = await contract.getPublicSalePrice();
     this.setState({
       rpcProvider: prov,
       providerContract: contract,
       currMinted: supply.toString(),
       publicSaleActive: publicActive,
       whitelistSaleActive: whitelistActive,
+      publicSalePrice: ethers.utils.formatEther(publicPrice).toString(),
+      whitelistSalePrice: ethers.utils.formatEther(whitelistPrice).toString(),
     });
   }
 
   async connectWallet() {
-    console.log("trying to connect to wallet.");
+    console.log("connecting wallet");
     // connect to provicer
-    const walletProvider = new ethers.providers.Web3Provider(window.ethereum);
-    await walletProvider.send("eth_requestAccounts", []);
-    if (walletProvider == null) {
-      console.log("provider not found");
+    var walletProvider;
+    try {
+      walletProvider = new ethers.providers.Web3Provider(window.ethereum);
+      await walletProvider.send("eth_requestAccounts", []);
+    } catch (e) {
+      this.setState({ walletConnectionError: true });
       return;
     }
-
-    // get instance of contract
 
     // get signer
     const signer = walletProvider.getSigner();
@@ -87,12 +100,8 @@ export default class Home extends React.Component {
       userSigner: signer,
       userProvider: walletProvider,
       userContract: contract,
+      walletConnectionError: false,
     });
-
-    console.log("signer, provider, and contract set.");
-    console.log(this.state.userProvider);
-    console.log(this.state.userSigner);
-    console.log(this.state.userContract);
   }
 
   render() {
@@ -108,7 +117,11 @@ export default class Home extends React.Component {
 
         <div className="grid md:items-center lg:grid-cols-2">
           <Header />
-          <Mint {...this.state} walletConnect={() => this.connectWallet()} />
+          <Mint
+            {...this.state}
+            walletConnect={() => this.connectWallet()}
+            updateCurrMinted={(count) => this.updateCurrMinted(count)}
+          />
         </div>
         {/* 
         <footer className={styles.footer}>

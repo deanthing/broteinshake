@@ -6,13 +6,11 @@ async function main() {
   const deployedContract = await contract.attach(
     "0x5FbDB2315678afecb367f032d93F642f64180aa3"
   );
-
-  await deployedContract.startWhitelistSale();
-  await deployedContract.startPublicSale();
-  await deployedContract.setBaseURI("www.mybaseuri.com/id/");
-  console.log("public and whitelist sale started");
+  await deployedContract.setWhitelist([
+    "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  ]);
+  console.log("whitelist set");
 }
-
 main()
   .then(() => process.exit(0))
   .catch((error) => {
