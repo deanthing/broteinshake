@@ -8,5 +8,5 @@ typechain
 cache
 artifacts
 
-
-.vscode
+*.png
+.vscod

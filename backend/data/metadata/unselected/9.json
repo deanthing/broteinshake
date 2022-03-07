@@ -1,0 +1,31 @@
+{
+  "name": "Collection #9",
+  "description": "Marijuana mojis",
+  "image": "ipfs://NewUriToReplace/9.png",
+  "dna": "910c4dba1dade94e80648e13f5223009597dcd48",
+  "edition": 9,
+  "date": 1644421707055,
+  "attributes": [
+    {
+      "trait_type": "back",
+      "value": "7"
+    },
+    {
+      "trait_type": "babe",
+      "value": "2"
+    },
+    {
+      "trait_type": "glass",
+      "value": "3"
+    },
+    {
+      "trait_type": "wagmi",
+      "value": "_0012_WAGMI"
+    },
+    {
+      "trait_type": "planet",
+      "value": "4"
+    }
+  ],
+  "compiler": "HashLips Art Engine"
+}
