@@ -68,6 +68,7 @@ async function updateAndMoveFiles(id) {
     res.json("failed to post to IPFS");
     return;
   }
+  console.log("posted to IPFS");
 
   /// update json file with IPFS link
   url = "https://gateway.pinata.cloud/ipfs/" + postRes.IpfsHash;
@@ -118,7 +119,6 @@ app.get("/nft/:id", async (req, res) => {
 });
 
 app.get("/gen/:id", async (req, res) => {
-  console.log("generated");
   console.log("request for:" + req.params.id);
   /// check if minting is allowed
   if (isNaN(req.params.id) || req.params.id > MAXSUPPLY) {
@@ -129,8 +129,6 @@ app.get("/gen/:id", async (req, res) => {
     req.params.id,
   ]);
   const supply = await getSupply();
-
-  console.log("output:" + output);
 
   if (output != undefined || req.params.id > supply) {
     res.sendStatus(405);

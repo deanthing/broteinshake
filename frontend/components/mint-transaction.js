@@ -40,44 +40,11 @@ export class MintTranaction extends Component {
         console.log("fetching");
         let res = await Promise.all(urls.map((e) => fetch(e)));
         console.log("result of fetch: " + res);
-        let resJson = await Promise.all(res.map((e) => e.json()));
-        console.log(resJson);
+        // let resJson = await Promise.all(res.map((e) => e.json()));
+        // console.log(resJson);
       } catch (err) {
         console.log(err);
       }
-
-      // await fetch(genUrls[0])
-      //   .then((res) => {
-      //     console.log(res.json());
-      //   })
-      //   .catch(console.log(res.json));
-
-      // Promise.all(
-      //   genUrls.map((u) => {
-      //     console.log("fetching for: " + u);
-      //     fetch(u);
-      //   })
-      // );
-
-      // Promise.all(genUrls.map((u) => fetch(u)))
-      //   .then(function (responses) {
-      //     console.log("got respone");
-      //     // Get a JSON object from each of the responses
-      //     return Promise.all(
-      //       responses.map(function (response) {
-      //         return response.json();
-      //       })
-      //     );
-      //   })
-      //   .then(function (data) {
-      //     // Log the data to the console
-      //     // You would do something with both sets of data here
-      //     console.log("fetching" + data);
-      //   })
-      //   .catch(function (error) {
-      //     // if there's an error, log it
-      //     console.log("error:" + error);
-      //   });
 
       this.props.updateCurrMinted(this.state.publicSaleQty);
       this.setState({ txSuccess: true });
