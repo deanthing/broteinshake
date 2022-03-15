@@ -9,7 +9,7 @@ async function main() {
 
   await deployedContract.startWhitelistSale();
   await deployedContract.startPublicSale();
-  await deployedContract.setBaseURI("www.mybaseuri.com/id/");
+  await deployedContract.setBaseURI("http://localhost:4000/id/");
   console.log("public and whitelist sale started");
 }
 

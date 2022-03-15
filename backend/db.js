@@ -14,27 +14,3 @@ var db;
 
   await db.exec("CREATE TABLE mint(mintId INTEGER)");
 })();
-
-// let db = new sqlite3.Database(
-//   "./data/db.sqlite",
-//   sqlite3.OPEN_READWRITE,
-//   (err) => {
-//     if (err) {
-//       console.error(err.message);
-//     }
-//     if (err) {
-//       // Cannot open database
-//       console.error(err.message);
-//       throw err;
-//     } else {
-//       console.log("Connected to the SQLite database.");
-//       const createTable = "CREATE TABLE mint(mintId INTEGER)";
-//       db.run(createTable, (err) => {
-//         if (err) {
-//           console.log("table created");
-//           console.log(err);
-//         }
-//       });
-//     }
-//   }
-// );

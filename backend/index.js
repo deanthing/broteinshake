@@ -1,5 +1,4 @@
 const express = require("express");
-const app = express();
 const port = 4000;
 const { ethers } = require("ethers");
 const contractAddres = "0x5fbdb2315678afecb367f032d93f642f64180aa3";
@@ -10,10 +9,14 @@ const ipfsApiUrl = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 require("dotenv").config();
 const FormData = require("form-data");
 const fsm = require("fs-extra");
+const cors = require("cors");
 const MAXSUPPLY = 5000;
 
+const app = express();
+app.use(cors());
 const sqlite3 = require("sqlite3").verbose();
 const sqlite = require("sqlite");
+const { send } = require("process");
 var db;
 (async () => {
   // open the database
@@ -55,38 +58,11 @@ async function postToIpfs(id) {
     });
 }
 
-app.get("/", (req, res) => {
-  res.send("hello world");
-});
-
-app.get("/init", (req, res) => {
-  // serve JWT toke
-});
-
-app.get("/gen/:id", async (req, res) => {
-  console.log("request for:" + req.params.id);
-  /// check if minting is allowed
-  if (req.params.id == 0 || isNaN(req.params.id) || req.params.id > MAXSUPPLY) {
-    res.json("illegal mint");
-    return;
-  }
-  const output = await db.get("select * from mint where mintId = ?", [
-    req.params.id,
-  ]);
-  // const supply = await getSupply();
-
-  // return
-  console.log("output:" + output);
-  const supply = 2;
-  if (output != undefined || req.params.id > supply) {
-    res.json("illegal mint");
-    return;
-  }
-
+async function updateAndMoveFiles(id) {
   /// post that row has been minted to block other equests from minting
-  await db.run("INSERT INTO mint VALUES(?)", [req.params.id]);
+  await db.run("INSERT INTO mint VALUES(?)", [id]);
 
-  const postRes = await postToIpfs(req.params.id);
+  const postRes = await postToIpfs(id);
   /// post to ipfs
   if (postRes == -1) {
     res.json("failed to post to IPFS");
@@ -95,31 +71,79 @@ app.get("/gen/:id", async (req, res) => {
 
   /// update json file with IPFS link
   url = "https://gateway.pinata.cloud/ipfs/" + postRes.IpfsHash;
-  const fileLoc = "./data/metadata/unselected/" + req.params.id + ".json";
+  const fileLoc = "./data/metadata/unselected/" + id + ".json";
   var fileToUpdate = JSON.parse(fs.readFileSync(fileLoc));
   fileToUpdate.image = url;
   fs.writeFileSync(fileLoc, JSON.stringify(fileToUpdate));
 
   /// move img and metadata
   // move json
-  const to = "./data/metadata/public/" + req.params.id + ".json";
-  fsm.move(fileLoc, to, (err) => {
+  const to = "./data/metadata/public/" + id + ".json";
+  await fsm.move(fileLoc, to, (err) => {
     if (err) return console.log(err);
     console.log("metadata moved");
   });
 
   // move img
-  const imgFrom = "./data/images/unselected/" + req.params.id + ".png";
-  const imgTo = "./data/images/public/" + req.params.id + ".png";
-  fsm.move(imgFrom, imgTo, (err) => {
+  const imgFrom = "./data/images/unselected/" + id + ".png";
+  const imgTo = "./data/images/public/" + id + ".png";
+  await fsm.move(imgFrom, imgTo, (err) => {
     if (err) return console.log(err);
     console.log("picture moved moved");
-    res.sendFile(`/data/metadata/public/${req.params.id}.json`, {
-      root: __dirname,
-    });
     return;
   });
+  return;
+}
+
+function checkFileExists(file) {
+  return fs.promises
+    .access(file, fs.constants.F_OK)
+    .then(() => true)
+    .catch(() => false);
+}
+
+app.get("/", (req, res) => {
+  res.send("hello world");
 });
+
+app.get("/nft/:id", async (req, res) => {
+  console.log(req.params.id);
+  const data = require(`./data/metadata/public/${req.params.id}.json`);
+  var exists = checkFileExists(data);
+  if (exists) {
+    res.json(data);
+  } else {
+    res.sendStatus(404);
+  }
+});
+
+app.get("/gen/:id", async (req, res) => {
+  console.log("generated");
+  console.log("request for:" + req.params.id);
+  /// check if minting is allowed
+  if (isNaN(req.params.id) || req.params.id > MAXSUPPLY) {
+    res.sendStatus(405);
+    return;
+  }
+  const output = await db.get("select * from mint where mintId = ?", [
+    req.params.id,
+  ]);
+  const supply = await getSupply();
+
+  console.log("output:" + output);
+
+  if (output != undefined || req.params.id > supply) {
+    res.sendStatus(405);
+    return;
+  }
+
+  console.log("moving files");
+  await updateAndMoveFiles(req.params.id);
+  console.log("done moving files");
+  res.sendStatus(200);
+  return;
+});
+
 app.listen(port, () => {
   console.log("express is listening on port: 4000");
 });
