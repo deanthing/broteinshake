@@ -45,7 +45,8 @@ export default class Home extends React.Component {
       });
 
     // get webProvider (for loading all info other than mint)
-    const prov = new ethers.providers.JsonRpcProvider();
+    // const prov = new ethers.providers.JsonRpcProvider();
+    const prov = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545/");
     const contract = new ethers.Contract(
       this.state.contractAddress,
       this.state.abi,

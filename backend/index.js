@@ -33,31 +33,6 @@ async function getSupply() {
   return supply.toString();
 }
 
-async function postToIpfs(id) {
-  const data = new FormData();
-  data.append(
-    "file",
-    fs.createReadStream("./data/images/unselected/" + id + ".png")
-  );
-  const config = {
-    headers: {
-      "Content-Type": `multipart/form-data; boundary= ${data._boundary}`,
-      pinata_api_key: process.env.KEY,
-      pinata_secret_api_key: process.env.SECRET,
-    },
-  };
-  return await axios
-    .post(ipfsApiUrl, data, config)
-    .catch((err) => {
-      console.log("axios post error:" + err);
-      return -1;
-    })
-    .then((res) => {
-      console.log(res.data);
-      return res.data;
-    });
-}
-
 function moveMetadata(id) {
   /// move img and metadata
   // move json
@@ -81,12 +56,16 @@ app.get("/", (req, res) => {
 });
 
 app.get("/nft/:id", async (req, res) => {
-  console.log(req.params.id);
-  const data = require(`./data/metadata/public/${req.params.id}.json`);
-  var exists = checkFileExists(data);
-  if (exists) {
-    res.json(data);
-  } else {
+  try {
+    console.log(req.params.id);
+    const data = require(`./data/metadata/public/${req.params.id}.json`);
+    var exists = checkFileExists(data);
+    if (exists) {
+      res.json(data);
+    } else {
+      res.sendStatus(404);
+    }
+  } catch (e) {
     res.sendStatus(404);
   }
 });
