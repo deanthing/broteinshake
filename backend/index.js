@@ -58,42 +58,15 @@ async function postToIpfs(id) {
     });
 }
 
-async function updateAndMoveFiles(id) {
-  /// post that row has been minted to block other equests from minting
-  await db.run("INSERT INTO mint VALUES(?)", [id]);
-
-  const postRes = await postToIpfs(id);
-  /// post to ipfs
-  if (postRes == -1) {
-    res.json("failed to post to IPFS");
-    return;
-  }
-  console.log("posted to IPFS");
-
-  /// update json file with IPFS link
-  url = "https://gateway.pinata.cloud/ipfs/" + postRes.IpfsHash;
-  const fileLoc = "./data/metadata/unselected/" + id + ".json";
-  var fileToUpdate = JSON.parse(fs.readFileSync(fileLoc));
-  fileToUpdate.image = url;
-  fs.writeFileSync(fileLoc, JSON.stringify(fileToUpdate));
-
+function moveMetadata(id) {
   /// move img and metadata
   // move json
   const to = "./data/metadata/public/" + id + ".json";
-  await fsm.move(fileLoc, to, (err) => {
+  fsm.move("./data/metadata/unselected/" + id + ".json", to, (err) => {
     if (err) return console.log(err);
     console.log("metadata moved");
-  });
-
-  // move img
-  const imgFrom = "./data/images/unselected/" + id + ".png";
-  const imgTo = "./data/images/public/" + id + ".png";
-  await fsm.move(imgFrom, imgTo, (err) => {
-    if (err) return console.log(err);
-    console.log("picture moved moved");
     return;
   });
-  return;
 }
 
 function checkFileExists(file) {
@@ -122,6 +95,7 @@ app.get("/gen/:id", async (req, res) => {
   console.log("request for:" + req.params.id);
   /// check if minting is allowed
   if (isNaN(req.params.id) || req.params.id > MAXSUPPLY) {
+    console.log("id NaN or id greather tahn max supply");
     res.sendStatus(405);
     return;
   }
@@ -130,14 +104,18 @@ app.get("/gen/:id", async (req, res) => {
   ]);
   const supply = await getSupply();
 
-  if (output != undefined || req.params.id > supply) {
+  if (output != undefined || parseInt(req.params.id) > parseInt(supply)) {
+    console.log("output: " + output);
+    console.log("id: " + req.params.id + " supply: " + supply);
+    console.log("already moved file or id not minted yet");
     res.sendStatus(405);
     return;
   }
+  /// post that row has been minted to block other equests from minting
+  await db.run("INSERT INTO mint VALUES(?)", [req.params.id]);
 
   console.log("moving files");
-  await updateAndMoveFiles(req.params.id);
-  console.log("done moving files");
+  moveMetadata(req.params.id);
   res.sendStatus(200);
   return;
 });
